@@ -6,7 +6,6 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lab 9</title>
-
   <style>
     button {
       margin: 3px;
@@ -47,6 +46,10 @@
       width: 122px;
     }
   </style>
+  <script src="https://cdn.trackjs.com/agent/v3/latest/t.js"></script>
+  <script>
+    window.TrackJS && TrackJS.install({ token: "3080827439e441dea79fb47e23d86d4b" });
+  </script>
 </head>
 
 <body>
@@ -88,6 +91,13 @@
   </main>
 
   <script>
+    class DivideByZeroError extends Error {
+      constructor(message) {
+        super(message);
+        this.name = "DivideByZeroError";
+      }
+    }
+
     let form = document.querySelector('form');
     form.addEventListener('submit', e => {
       e.preventDefault();
@@ -95,13 +105,114 @@
       let firstNum = document.querySelector('#first-num').value;
       let secondNum = document.querySelector('#second-num').value;
       let operator = document.querySelector('#operator').value;
-      output.innerHTML = eval(`${firstNum} ${operator} ${secondNum}`);
+
+      try {
+        if (operator === '/' && Number(secondNum) === 0) {
+          throw new DivideByZeroError("Cannot divide by zero!");
+        }
+
+        let result = eval(`${firstNum} ${operator} ${secondNum}`);
+        if (isNaN(result)) throw new Error("Invalid calculation");
+
+        output.innerHTML = result;
+      } catch (err) {
+        console.error("Caught error during calculation:", err);
+        output.innerHTML = "Error: " + err.message;
+        if (window.TrackJS) {
+          TrackJS.track(err);
+        }
+      } finally {
+        console.log("Calculation attempted");
+      }
     });
 
     let errorBtns = Array.from(document.querySelectorAll('#error-btns > button'));
+    let groupStarted = false;
 
-    // Start your code here
-    // You may move this JS to another file if you wish
+    errorBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const text = btn.textContent;
+
+        switch (text) {
+          case "Console Log":
+            console.log("This is a log message", { user: "Evan", course: "CSE110" });
+            break;
+          case "Console Error":
+            console.error("This is an error message");
+            break;
+          case "Console Count":
+            console.count("Console Count");
+            break;
+          case "Console Warn":
+            console.warn("This is a warning");
+            break;
+          case "Console Assert":
+            console.assert(2 + 2 === 5, "Assertion failed: 2 + 2 is not 5");
+            break;
+          case "Console Clear":
+            console.clear();
+            break;
+          case "Console Dir":
+            console.dir(document.body);
+            break;
+          case "Console dirxml":
+            console.dirxml(document.body);
+            break;
+          case "Console Group Start":
+            if (!groupStarted) {
+              console.group("Grouped Messages");
+              groupStarted = true;
+            }
+            break;
+          case "Console Group End":
+            if (groupStarted) {
+              console.groupEnd();
+              groupStarted = false;
+            }
+            break;
+          case "Console Table":
+            console.table([
+              { name: "Evan", age: 20 },
+              { name: "Rafel", age: 25 }
+            ]);
+            break;
+          case "Start Timer":
+            console.time("Timer");
+            break;
+          case "End Timer":
+            console.timeEnd("Timer");
+            break;
+          case "Console Trace":
+            function first() {
+              second();
+            }
+            function second() {
+              third();
+            }
+            function third() {
+              console.trace("Trace call");
+            }
+            first();
+            break;
+          case "Trigger a Global Error":
+            nonExistentFunction();
+            break;
+        }
+      });
+    });
+
+    window.onerror = function (msg, url, lineNo, columnNo, error) {
+      console.log("Global Error Caught:");
+      console.log("Message:", msg);
+      console.log("URL:", url);
+      console.log("Line:", lineNo);
+      console.log("Column:", columnNo);
+      console.log("Error object:", error);
+      if (window.TrackJS) {
+        TrackJS.track(error || msg);
+      }
+      return true;
+    };
   </script>
 </body>
 
